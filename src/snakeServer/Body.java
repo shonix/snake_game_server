@@ -45,5 +45,11 @@ public class Body {
 		this.parentSnakeId = parentSnakeId;
 	}
 	
+	public String toString(){
+		return id + ", " + x + ", " + y;
+		
+		
+	}
+	
 	
 }
