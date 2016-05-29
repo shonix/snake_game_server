@@ -12,16 +12,15 @@ public class ServerConnection extends Thread {
 	private Boolean connected = true;
 	private ClientHandler client;
 	private BufferedReader inFromClient;
-	private Boolean connOpen = true;
 	private int foodId = 0;
-	private ArrayList<Food> foodList = new ArrayList<>();
-	private ArrayList<Snake> snakeList = new ArrayList<>();
-	private char splitter = (char) 007;
+	private World world;
+	private char splitter = (char)007;
 	private String split = "";
 
-	public ServerConnection(ClientHandler client, ConnectionHandler connectionHandler) {
+	public ServerConnection(ClientHandler client,World world, ConnectionHandler connectionHandler) {
 		this.userSocket = client.getSocket();
 		this.client = client;
+		this.world = world;
 	}
 
 	public void run() {
@@ -33,7 +32,6 @@ public class ServerConnection extends Thread {
 	}
 
 	public void confirmClient(Socket userSocket) {
-		connOpen = true;
 		String[] requestParam;
 
 		try {
@@ -48,7 +46,7 @@ public class ServerConnection extends Thread {
 				request = inFromClient.readLine();
 				split = String.valueOf(splitter);
 				requestParam = request.split(split);
-				//System.out.println(request);
+				System.out.println(request);
 
 				switch (requestParam[0]) {
 				case "":
@@ -163,7 +161,7 @@ public class ServerConnection extends Thread {
 			}
 		}
 
-		for (Snake snake : snakeList) {
+		for (Snake snake : world.getSnakeList()) {
 			if (snake.getId() == parentSnakeId) {
 				ArrayList<Body> listOfBodyParts = snake.getBodyList();
 				for (Body body : listOfBodyParts) {
@@ -186,7 +184,7 @@ public class ServerConnection extends Thread {
 			}
 		}
 
-		for (Snake snake : snakeList) {
+		for (Snake snake : world.getSnakeList()) {
 			if (snake.getId() == id) {
 				snake.setX(x);
 				snake.setY(y);
@@ -201,7 +199,7 @@ public class ServerConnection extends Thread {
 			client.writeToClient(
 					"NEW" + split + "FOOD" + split + foodId + split + food.getX() + split + food.getY() + "\n");
 		}
-		foodList.add(food);
+		world.getFoodList().add(food);
 		foodId++;
 	}
 
@@ -213,7 +211,7 @@ public class ServerConnection extends Thread {
 			}
 		}
 
-		for (Snake snake : snakeList) {
+		for (Snake snake : world.getSnakeList()) {
 			if (snake.getId() == body.getParentSnakeId()) {
 				snake.getBodyList().add(body);
 				return;
@@ -223,8 +221,8 @@ public class ServerConnection extends Thread {
 
 	public void createNewSnake(Snake snake) {
 		
-		snakeList.add(snake);
-		for(Snake s : snakeList){
+		world.getSnakeList().add(snake);
+		for(Snake s : world.getSnakeList()){
 			System.out.println(s.getId());
 		}
 		
@@ -244,12 +242,12 @@ public class ServerConnection extends Thread {
 			if (client.getUserID() == id) {
 				client.setInGame(true);
 
-				for (Food food : foodList) {
+				for (Food food : world.getFoodList()) {
 					client.writeToClient(
 							"NEW" + split + "FOOD" + split + foodId + split + food.getX() + split + food.getY() + "\n");
 					System.out.println("food id :" +food.getId());
 				}
-				for (Snake s : snakeList) {
+				for (Snake s : world.getSnakeList()) {
 					if(s.getId() != id){
 					client.writeToClient("NEW" + split + "SNAKE" + split + s.getId() + split + s.getAngle() + split
 							+ s.getX() + split + s.getY() + '\n');
@@ -268,9 +266,9 @@ public class ServerConnection extends Thread {
 	}
 
 	public void deleteSnake(int snakeId) {
-		for (Snake snake : snakeList) {
+		for (Snake snake : world.getSnakeList()) {
 			if (snakeId == snake.getId()) {
-				snakeList.remove(snake);
+				world.getSnakeList().remove(snake);
 				System.out.println("when am i called?");
 				for (ClientHandler client : ConnectionHandler.allUsers) {
 					client.writeToClient("DEL" + split + "SNAKE" + split + snakeId + '\n');
@@ -285,9 +283,9 @@ public class ServerConnection extends Thread {
 			client.writeToClient("DEL" + split + "FOOD" + split + id + '\n');
 		}
 
-		for (Food f : foodList) {
+		for (Food f : world.getFoodList()) {
 			if (f.id == id) {
-				foodList.remove(f);
+				world.getFoodList().remove(f);
 				return;
 			}
 		}
