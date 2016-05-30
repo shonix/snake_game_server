@@ -21,6 +21,7 @@ public class ClientHandler {
 				outToClient = new DataOutputStream(userSocket.getOutputStream());
 				outToClient.writeBytes(output);
 			} catch (Exception e) {
+				
 				try {
 					userSocket.close();
 					this.close();

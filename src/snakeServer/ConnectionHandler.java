@@ -15,7 +15,6 @@ public class ConnectionHandler {
 	public ConnectionHandler(World world) throws IOException {
 		while (true) {
 			Socket userSocket = socketListener.accept();
-			
 			if (userSocket != null) {
 				System.out.println("Connecting...");
 				id++;

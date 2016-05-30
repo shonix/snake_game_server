@@ -12,7 +12,6 @@ public class ServerConnection extends Thread {
 	private Boolean connected = true;
 	private ClientHandler client;
 	private BufferedReader inFromClient;
-	private int foodId = 0;
 	private World world;
 	private char splitter = (char)007;
 	private String split = "";
@@ -27,6 +26,11 @@ public class ServerConnection extends Thread {
 		try {
 			confirmClient(userSocket);
 		} catch (NullPointerException e) {
+			for (Snake snake : world.getSnakeList()){
+				if(client.getUserID() == snake.getId()){
+					world.getSnakeList().remove(snake);
+				}
+			}
 			client.close();
 		}
 	}
@@ -46,7 +50,6 @@ public class ServerConnection extends Thread {
 				request = inFromClient.readLine();
 				split = String.valueOf(splitter);
 				requestParam = request.split(split);
-				System.out.println(request);
 
 				switch (requestParam[0]) {
 				case "":
@@ -81,14 +84,17 @@ public class ServerConnection extends Thread {
 					break;
 
 				case "DEL":
+					int snakeId;
 					switch (requestParam[1]) {
 					case "FOOD":
-						int foodId = Integer.parseInt(requestParam[2]);
-						deleteFood(foodId);
+						//System.out.println(request);
+						snakeId = Integer.parseInt(requestParam[2]);
+						int foodId = Integer.parseInt(requestParam[3]);
+						deleteFood(snakeId,foodId);
 						break;
 
 					case "SNAKE":
-						int snakeId = Integer.parseInt(requestParam[2]);
+						snakeId = Integer.parseInt(requestParam[2]);
 						deleteSnake(snakeId);
 						break;
 					}
@@ -102,7 +108,7 @@ public class ServerConnection extends Thread {
 				case "SET":
 					switch (requestParam[1]) {
 					case "SNAKE":
-						int snakeId = Integer.parseInt(requestParam[2]);
+						snakeId = Integer.parseInt(requestParam[2]);
 						float snakeAngle = Float.parseFloat(requestParam[3]);
 						float snakeX = Float.parseFloat(requestParam[4]);
 						float snakeY = Float.parseFloat(requestParam[5]);
@@ -131,7 +137,7 @@ public class ServerConnection extends Thread {
 					case "FOOD":
 						float foodX = Float.parseFloat(requestParam[2]);
 						float foodY = Float.parseFloat(requestParam[3]);
-						Food food = new Food(foodId, foodX, foodY);
+						Food food = new Food(world.getFoodId(), foodX, foodY);
 						spawnFood(food);
 						break;
 					}
@@ -197,10 +203,11 @@ public class ServerConnection extends Thread {
 	public void spawnFood(Food food) {
 		for (ClientHandler client : ConnectionHandler.allUsers) {
 			client.writeToClient(
-					"NEW" + split + "FOOD" + split + foodId + split + food.getX() + split + food.getY() + "\n");
+					"NEW" + split + "FOOD" + split + world.getFoodId() + split + food.getX() + split + food.getY() + "\n");
 		}
 		world.getFoodList().add(food);
-		foodId++;
+		world.setFoodId(world.getFoodId()+1);
+		System.out.println("to client: SPAWN|"+client.getUserID()+"|"+world.getFoodId() + "|");
 	}
 
 	public void createNewBody(Body body) {
@@ -220,7 +227,6 @@ public class ServerConnection extends Thread {
 	}
 
 	public void createNewSnake(Snake snake) {
-		
 		world.getSnakeList().add(snake);
 		for(Snake s : world.getSnakeList()){
 			System.out.println(s.getId());
@@ -244,7 +250,7 @@ public class ServerConnection extends Thread {
 
 				for (Food food : world.getFoodList()) {
 					client.writeToClient(
-							"NEW" + split + "FOOD" + split + foodId + split + food.getX() + split + food.getY() + "\n");
+							"NEW" + split + "FOOD" + split + world.getFoodId() + split + food.getX() + split + food.getY() + "\n");
 					System.out.println("food id :" +food.getId());
 				}
 				for (Snake s : world.getSnakeList()) {
@@ -278,14 +284,15 @@ public class ServerConnection extends Thread {
 		}
 	}
 
-	public void deleteFood(int id) {
+	public void deleteFood(int snakeId, int currFoodId) {
 		for (ClientHandler client : ConnectionHandler.allUsers) {
-			client.writeToClient("DEL" + split + "FOOD" + split + id + '\n');
+			client.writeToClient("DEL" + split + "FOOD" + split + currFoodId + '\n');
+			System.out.println("to client: DEL|"+client.getUserID()+"|"+currFoodId);
 		}
 
-		for (Food f : world.getFoodList()) {
-			if (f.id == id) {
-				world.getFoodList().remove(f);
+		for (Food food : world.getFoodList()) {
+			if (food.id == currFoodId) {
+				world.getFoodList().remove(food);
 				return;
 			}
 		}
